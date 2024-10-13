@@ -1,0 +1,146 @@
+GTA ONLINE
+
+--1) Nombre de usuarios que tienen el arma "Lanza Cohetes Teledirigidos" con su municion
+
+SELECT Usuarios.nombre, UsuariosArmas.municion from usuarios join usuariosArmas 
+on usuarios.id = usuariosArmas.usuario_id
+join Armas on armas.id = usuariosArmas.arma_id where armas.modelo = 'Lanza Cohetes Teledirigidos';
+
+--2) Nombre de usuarios de que han terminado exactamente 5 Misiones
+
+SELECT Usuarios.nombre from usuarios join (select count(*),usuarios_id from UsuariosMisiones where terminado = true
+group by usuarios_id) as t1 on t1.usuarios_id = usuarios.id where t1.count = 5;
+
+--3) Nombre de usuarios que tienen sus armas con sus municiones al maximo
+
+SELECT Usuarios.nombre from usuarios join UsuariosArmas on usuarios.id = usuariosArmas.usuario_id
+join Armas on armas.id = usuariosArmas.arma_id where usuariosArmas.municion = armas.maximo;
+
+--4) Nombre del personaje que la suma de dinero que ha ganado sea mas 1.000.000 dolares
+
+SELECT Usuarios.nombre from usuarios join (select sum(Misiones.dinero),UsuariosMisiones.usuarios_id from misiones join UsuariosMisiones
+Misiones.id = UsuariosMisiones.mision_id group by UsuariosMisiones.usuarios_id)
+as t1 on usuarios.id = t1.usuarios_id where t1.sum > 1.000.000;
+
+--5) Cuales son los usuarios que han realizados mas misiones distintas
+
+SELECT psn_user FROM (SELECT MAX(COUNT) FROM (SELECT usuario_id, COUNT(*) FROM 
+(SELECT usuario_id, mision_id FROM usuariosmisiones GROUP BY usuario_id, mision_id) as t1) as t2) JOIN (SELECT usuario_id, COUNT(*) FROM 
+(SELECT usuario_id, mision_id FROM usuariosmisiones GROUP BY usuario_id, mision_id) as t3) as t4 ON t4.COUNT = t2.MAX JOIN usuarios ON usuarios.id = t4.usuario_id
+
+select Usuarios.nombre from(select max(count) 
+from(select count(*) from UsuariosArmas group by UsuariosArmas.usuario_id) as t1) as t2 
+join (select count(*),UsuariosArmas.usuario_id from UsuariosArmas group by UsuariosArmas.usuario_id) as t3
+on t2.max = t3.count join usuarios on t3.usuario_id = usuarios.id group by Usuarios.nombre;
+
+--7) Cuales son los usuarios entre 10 y 20 armas 
+
+select Usuarios.nombrefrom(select count(*),UsuariosArmas.usuario_id from UsuariosArmas group by UsuariosArmas.usuario_id) as t1
+join usuarios on t1.usuario_id = usuarios.id where t1.count BETWEEN 10 AND 20 group by Usuarios.nombre;
+
+
+
+Nunoa
+
+--1. Mostrar el nombre social del rut perteneciente a 97004000-5
+SELECT nombre_social FROM representantes WHERE rut = 97004000 AND dv = '5';
+
+--2. Mostrar las direcciones de los locales que corresponden al rut 97004000-5
+SELECT direccion FROM locales JOIN representantes ON representantes.id = locales.representantes_id WHERE representantes.rut = 97004000 AND representantes.dv = '5';
+
+--3. ¿Cuantos locales hay en comuna de Ñuñoa?
+SELECT COUNT(*) FROM locales JOIN comunas ON comunas.id = locales.comunas_id WHERE comunas.nombre = "Municipalidad de Ñuñoa";
+
+--4. ¿Cuantos locales tiene el rut 97023000-9 en la junta de vecinos numero 7?
+SELECT COUNT(*) FROM locales JOIN representantes ON representantes.id = locales.representantes_id JOIN juntas_vecinos ON juntas_vecinos.id = locales.juntas_vecinos_id WHERE
+representantes.rut = 97023000 AND representantes.dv = '9' AND juntas_vecinos.numero = 7;
+
+--5. ¿Cuantos locales hay en la unidad vecinal 18?
+SELECT COUNT(*) FROM locales JOIN juntas_vecinos ON juntas_vecinos.id = locales.juntas_vecinos_id WHERE juntas_vecinos.numero = 18;
+
+--6. Mostrar la direccion con locales
+SELECT nombre_social, direccion FROM locales JOIN representantes ON representantes.id = locales.representantes_id;
+
+--7. Mostrar el nombre social de los representantes que tengan más de 3 locales y menos de 7 locales
+SELECT nombre_social FROM locales JOIN representantes ON representantes.id = locales.representantes_id GROUP BY representantes.id, representantes.nombre_social
+HAVING COUNT(locales.id) > 3 AND COUNT(locales.id) < 7;
+
+SELECT nombre_social FROM representantes WHERE id IN (SELECT representantes_id FROM (SELECT COUNT(*), representantes_id FROM locales GROUP BY representantes_id)AS t1)
+WHERE t1.COUNT > 3 AND t1.COUNT < 7;
+
+--8. Mostrar cuanto paga nombre social CENCOSUD RETAIL S.A. por la totalidad de sus patentes
+SELECT SUM(pago) FROM locales JOIN representantes ON representantes.id = locales.representantes_id WHERE nombre_social = 'CENCOSUD RETAIL S.A.';
+
+--9. Mostrar ordenadamente de mayor a menor quienes tienen mas locales en la comuna
+SELECT nombre_social, COUNT(locales.id) FROM representantes JOIN locales ON representantes.id = locales.representantes_id JOIN comunas ON comunas.id = locales.comunas_id
+GROUP BY representantes.id, representantes.nombre_social ORDER BY COUNT DESC;
+
+--10. Mostrar quien tiene más locales en la comuna
+SELECT representantes.nombre_social FROM (SELECT MAX(COUNT) FROM (SELECT COUNT(*) FROM locales JOIN representantes on representantes.id = locales.representantes_id GROUP BY representantes.id
+) as t1) as t2 JOIN (SELECT representantes_id, COUNT(*) FROM locales JOIN representantes on representantes.id = locales.representantes_id GROUP BY representantes_id) 
+as t3 ON t2.MAX = t3.COUNT JOIN representantes ON representantes.id = t3.representantes_id;
+
+--11. Mostrar los representantes que no estan presente en la junta de vecinos mayores al numero 30 y menores al numero 10
+SELECT nombre_social FROM representantes WHERE representantes.id NOT IN (SELECT representantes_id FROM locales JOIN juntas_vecinos ON juntas_vecinos.id = locales.juntas_vecinos_id
+WHERE numero > 30 AND numero < 10);
+
+--12. Mostrar el nombre social de quien más paga en las junta vecinos 4 y 16 ***REVISAR***
+SELECT representantes.nombre_social FROM (SELECT MAX(SUM) FROM (SELECT SUM(pago) FROM locales JOIN (SELECT locales.id FROM locales join juntas_vecinos ON juntas_vecinos.id = locales.juntas_vecinos_id WHERE
+juntas_vecinos.numero = 4 OR juntas_vecinos.numero = 16) AS t1 ON t1.id = locales.id GROUP BY representantes_id) AS t2) as t3 JOIN (SELECT representantes_id, SUM(pago) FROM locales JOIN (SELECT locales.id FROM locales join juntas_vecinos ON juntas_vecinos.id = locales.juntas_vecinos_id WHERE
+juntas_vecinos.numero = 4 OR juntas_vecinos.numero = 16) AS t1 ON t1.id = locales.id GROUP BY representantes_id) AS t4 ON t4.SUM = t3.MAX JOIN representantes ON representantes.id = t4.representantes_id;
+
+
+TIENDA
+
+--20. Rut de los clientes y monto total comprado por cada uno de ellos
+SELECT rut_cliente, SUM(monto) FROM ventas GROUP BY ventas.rut_cliente;
+
+--21. Nombre de los clientes y monto total comprado por cada uno de ellos
+SELECT clientes.nombre, SUM(monto) FROM clientes JOIN ventas ON ventas.rut_cliente = clientes.rut GROUP BY clientes.rut, clientes.nombre;
+
+--22. Nombre de los vendedores y monto total vendido por cada uno de ellos
+SELECT empleados.nombre, SUM(monto) FROM empleados JOIN ventas ON ventas.rut_vende = empleados.rut GROUP BY empleados.rut, empleados.nombre;
+
+--23. Nombre del producto menos vendido
+SELECT productos.nombre FROM (SELECT MIN(SUM) FROM (SELECT SUM(cantidad) FROM ventas_detalle GROUP BY cod_producto) as suma) as minimo JOIN 
+(SELECT cod_producto, SUM(cantidad) FROM ventas_detalle GROUP BY cod_producto) as suma2 ON minimo.MIN = suma2.SUM JOIN productos ON productos.codigo = suma2.cod_producto;
+
+--24. Nombre del cliente que ha comprado mas veces en la tienda
+SELECT clientes.nombre FROM (SELECT MAX(COUNT) FROM (SELECT COUNT(*) FROM ventas GROUP BY rut_cliente) as t1) as t2 JOIN (SELECT rut_cliente, COUNT(*) FROM ventas GROUP BY rut_cliente) as t3
+ON t2.MAX = t3.COUNT JOIN clientes ON clientes.rut = t3.rut_cliente;
+
+--25. Nombre del producto que nunca se ha vendido
+SELECT productos.nombre FROM productos WHERE productos.codigo NOT IN (SELECT cod_producto FROM ventas_detalle);
+
+--26. Comuna en la que vive el cliente que ha comprado menos televisores
+SELECT comuna FROM (SELECT MIN(SUM) FROM (SELECT SUM(cantidad) FROM ventas_detalle JOIN productos ON productos.codigo = ventas_detalle.cod_producto WHERE productos.nombre = 'televisor'
+GROUP BY num_venta) as t1) as t2 JOIN (SELECT num_venta, SUM(cantidad) FROM ventas_detalle JOIN productos ON productos.codigo = ventas_detalle.cod_producto WHERE productos.nombre = 'televisor'
+GROUP BY num_venta) as t3 ON t3.SUM = t2.MIN JOIN ventas ON ventas.num_venta = t3.num_venta JOIN clientes ON clientes.rut = ventas.rut_cliente;
+
+--27. Nombre del vendedor que ha vendido menos dvd's
+SELECT empleados.nombre FROM (SELECT MIN(SUM) FROM (SELECT SUM(cantidad) FROM ventas_detalle JOIN productos ON productos.codigo = ventas_detalle.cod_producto WHERE productos.nombre = 'dvd' GROUP BY num_venta)
+as t1) as t2 JOIN (SELECT num_venta, SUM(cantidad) FROM ventas_detalle JOIN productos ON productos.codigo = ventas_detalle.cod_producto WHERE productos.nombre = 'dvd' GROUP BY num_venta)
+as t3 ON t3.SUM = t2.MIN JOIN ventas ON ventas.num_venta = t3.num_venta JOIN empleados ON empleados.rut = ventas.rut_vende GROUP BY empleados.nombre;
+
+--28. Nombre, sueldo y grado de los gerentes (MANAGER)
+SELECT nombre, sueldo, grado FROM empleados JOIN grados ON sueldo >= sueldo_inf AND sueldo <= sueldo_sup WHERE cargo = 'MANAGER';
+
+--29. Cantidad de productos cuyos precios son superiores al promedio
+SELECT COUNT(*) FROM productos WHERE precio > (SELECT AVG(precio) FROM productos);
+
+--30. Monto total de las ventas hechas al cliente que menos veces ha comprado
+SELECT rut_cliente, SUM(monto) FROM ventas GROUP BY rut_cliente HAVING COUNT(*) = (SELECT MIN(COUNT) FROM (SELECT rut_cliente, COUNT(*) FROM ventas GROUP BY rut_cliente) as menorCompra);
+
+--31. Total de sueldos pagados en cada uno de los departamentos
+SELECT deptos.numdep, SUM(sueldo) FROM empleados JOIN deptos ON deptos.numdep = empleados.numdep GROUP BY deptos.numdep;
+SELECT deptos.nombre, SUM(sueldo) FROM empleados JOIN deptos ON deptos.numdep = empleados.numdep GROUP BY deptos.nombre;
+
+--32. Numero de empleados que estan en grado 3
+SELECT COUNT(*) FROM empleados JOIN grados ON sueldo >= sueldo_inf AND sueldo <= sueldo_sup WHERE grado = 3;
+
+--33. Monto total vendido en cada comuna
+SELECT comuna, SUM(monto) FROM ventas JOIN clientes ON clientes.rut = ventas.rut_cliente GROUP BY rut_cliente, comuna;
+
+--34. Cantidad total vendida de cada producto
+SELECT cod_producto, SUM(cantidad) FROM ventas_detalle GROUP BY cod_producto;
+
